@@ -122,11 +122,14 @@ const ServiceCreationModal: React.FC<ServiceCreationModalProps> = ({
       <KeyboardAvoidingView
         style={styles.modalKeyboardContainer}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView
           style={styles.modalScrollView}
           contentContainerStyle={styles.modalScrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={true}
+          nestedScrollEnabled={false}
         >
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>✨ Add New Service</Text>
@@ -223,23 +226,23 @@ const ServiceCreationModal: React.FC<ServiceCreationModalProps> = ({
 
 const styles = StyleSheet.create({
   modalOverlay: {
-    flex: 1,
+    // flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalKeyboardContainer: {
-    flex: 1,
+    // flex: 1,
     justifyContent: "center",
     alignItems: "center",
     width: "100%",
   },
   modalScrollView: {
-    flex: 1,
+    // flex: 1,
     width: "100%",
   },
   modalScrollContent: {
-    flexGrow: 1,
+    // flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -249,6 +252,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
     width: "90%",
+    minHeight: 400,
+    maxHeight: 600,
+    minHeight: 400,
+    maxHeight: 600,
     maxWidth: 400,
     shadowColor: "#FF69B4",
     shadowOffset: { width: 0, height: 10 },
@@ -275,7 +282,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   halfWidth: {
-    flex: 1,
+    // flex: 1,
   },
   inputLabel: {
     fontSize: 16,
@@ -299,7 +306,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   modalButton: {
-    flex: 1,
+    // flex: 1,
     paddingVertical: 18,
     paddingHorizontal: 20,
     borderRadius: 20,
