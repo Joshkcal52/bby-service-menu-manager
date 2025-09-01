@@ -11,7 +11,7 @@ export class DatabaseService {
       const sectionsResult = await query(
         `SELECT id, name, description, display_order as "order" 
          FROM service_sections 
-         WHERE user_id = $1 AND is_active = true 
+         WHERE user_id = $1 
          ORDER BY display_order`,
         [userId]
       );
@@ -24,7 +24,7 @@ export class DatabaseService {
           `SELECT id, name, description, duration_minutes as duration, 
                   ROUND(price_cents/100.0, 2) as price, display_order as "order"
            FROM services 
-           WHERE section_id = $1 AND is_active = true 
+           WHERE section_id = $1 
            ORDER BY display_order`,
           [sectionRow.id]
         );
@@ -36,7 +36,7 @@ export class DatabaseService {
                   sp.total_duration_minutes as duration,
                   sp.display_order as "order"
            FROM service_packages sp
-           WHERE sp.section_id = $1 AND sp.is_active = true 
+           WHERE sp.section_id = $1 
            ORDER BY sp.display_order`,
           [sectionRow.id]
         );
@@ -89,7 +89,7 @@ export class DatabaseService {
             `UPDATE service_sections 
              SET display_order = $1, updated_at = CURRENT_TIMESTAMP 
              WHERE id = $2 AND user_id = $3`,
-            [1000 + i, section.id, userId]
+            [10000 + i, section.id, userId]
           );
 
           if (result.rowCount === 0) {
@@ -100,7 +100,7 @@ export class DatabaseService {
         }
       }
 
-      // Now set the final order
+      // Now set the actual order
       for (let i = 0; i < sections.length; i++) {
         const section = sections[i];
         if (section && section.id) {
@@ -117,13 +117,11 @@ export class DatabaseService {
             console.warn(
               `No rows updated for section ${section.id} with user ${userId}`
             );
-          } else {
-            console.log(
-              `Successfully updated section ${section.id} to order ${i + 1}`
-            );
           }
         }
       }
+
+      console.log(`Section order update completed for user ${userId}`);
     } catch (error) {
       console.error("Error updating section order:", error);
       throw new Error("Failed to update section order");
@@ -132,10 +130,21 @@ export class DatabaseService {
 
   // Update service order within a section
   static async updateServiceOrder(
+    userId: string,
     sectionId: string,
     services: Service[]
   ): Promise<void> {
     try {
+      // First verify the section belongs to the user
+      const sectionCheck = await query(
+        `SELECT id FROM service_sections WHERE id = $1 AND user_id = $2`,
+        [sectionId, userId]
+      );
+
+      if (sectionCheck.rowCount === 0) {
+        throw new Error("Section not found or access denied");
+      }
+
       console.log(
         `Updating service order for section ${sectionId} with ${services.length} services`
       );
@@ -146,33 +155,43 @@ export class DatabaseService {
         if (service && service.id) {
           console.log(`Setting temporary order for service ${service.id}`);
 
-          await query(
+          const result = await query(
             `UPDATE services 
              SET display_order = $1, updated_at = CURRENT_TIMESTAMP 
              WHERE id = $2 AND section_id = $3`,
-            [1000 + i, service.id, sectionId]
+            [10000 + i, service.id, sectionId]
           );
+
+          if (result.rowCount === 0) {
+            console.warn(
+              `No rows updated for service ${service.id} with section ${sectionId}`
+            );
+          }
         }
       }
 
-      // Then, set the final order numbers
+      // Now set the actual order
       for (let i = 0; i < services.length; i++) {
         const service = services[i];
         if (service && service.id) {
           console.log(`Setting final order ${i + 1} for service ${service.id}`);
 
-          await query(
+          const result = await query(
             `UPDATE services 
              SET display_order = $1, updated_at = CURRENT_TIMESTAMP 
              WHERE id = $2 AND section_id = $3`,
             [i + 1, service.id, sectionId]
           );
 
-          console.log(
-            `Successfully updated service ${service.id} to order ${i + 1}`
-          );
+          if (result.rowCount === 0) {
+            console.warn(
+              `No rows updated for service ${service.id} with section ${sectionId}`
+            );
+          }
         }
       }
+
+      console.log(`Service order update completed for section ${sectionId}`);
     } catch (error) {
       console.error("Error updating service order:", error);
       throw new Error("Failed to update service order");
@@ -181,6 +200,7 @@ export class DatabaseService {
 
   // Update package order within a section
   static async updatePackageOrder(
+    userId: string,
     sectionId: string,
     packages: ServicePackage[]
   ): Promise<void> {
@@ -195,16 +215,22 @@ export class DatabaseService {
         if (packageItem && packageItem.id) {
           console.log(`Setting temporary order for package ${packageItem.id}`);
 
-          await query(
+          const result = await query(
             `UPDATE service_packages 
              SET display_order = $1, updated_at = CURRENT_TIMESTAMP 
              WHERE id = $2 AND section_id = $3`,
-            [1000 + i, packageItem.id, sectionId]
+            [10000 + i, packageItem.id, sectionId]
           );
+
+          if (result.rowCount === 0) {
+            console.warn(
+              `No rows updated for package ${packageItem.id} with section ${sectionId}`
+            );
+          }
         }
       }
 
-      // Then, set the final order numbers
+      // Now set the actual order
       for (let i = 0; i < packages.length; i++) {
         const packageItem = packages[i];
         if (packageItem && packageItem.id) {
@@ -212,21 +238,92 @@ export class DatabaseService {
             `Setting final order ${i + 1} for package ${packageItem.id}`
           );
 
-          await query(
+          const result = await query(
             `UPDATE service_packages 
              SET display_order = $1, updated_at = CURRENT_TIMESTAMP 
              WHERE id = $2 AND section_id = $3`,
             [i + 1, packageItem.id, sectionId]
           );
 
-          console.log(
-            `Successfully updated package ${packageItem.id} to order ${i + 1}`
-          );
+          if (result.rowCount === 0) {
+            console.warn(
+              `No rows updated for package ${packageItem.id} with section ${sectionId}`
+            );
+          }
         }
       }
+
+      console.log(`Package order update completed for section ${sectionId}`);
     } catch (error) {
       console.error("Error updating package order:", error);
       throw new Error("Failed to update package order");
+    }
+  }
+
+  // Delete a section
+  static async deleteSection(userId: string, sectionId: string): Promise<void> {
+    try {
+      // First delete all services and packages in this section (hard delete)
+      await query(`DELETE FROM services WHERE section_id = $1`, [sectionId]);
+
+      await query(`DELETE FROM service_packages WHERE section_id = $1`, [
+        sectionId,
+      ]);
+
+      // Then delete the section itself (hard delete)
+      await query(
+        `DELETE FROM service_sections WHERE id = $1 AND user_id = $2`,
+        [sectionId, userId]
+      );
+
+      console.log(`Section ${sectionId} deleted for user ${userId}`);
+    } catch (error) {
+      console.error("Error deleting section:", error);
+      throw new Error("Failed to delete section");
+    }
+  }
+
+  // Delete a service
+  static async deleteService(
+    userId: string,
+    sectionId: string,
+    serviceId: string
+  ): Promise<void> {
+    try {
+      await query(`DELETE FROM services WHERE id = $1 AND section_id = $2`, [
+        serviceId,
+        sectionId,
+      ]);
+
+      console.log(`Service ${serviceId} deleted from section ${sectionId}`);
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      throw new Error("Failed to delete service");
+    }
+  }
+
+  // Delete a package
+  static async deletePackage(
+    userId: string,
+    sectionId: string,
+    packageId: string
+  ): Promise<void> {
+    try {
+      // First delete package-service relationships
+      await query(`DELETE FROM package_services WHERE package_id = $1`, [
+        packageId,
+      ]);
+
+      // Then delete the package itself
+      await query(
+        `DELETE FROM service_packages WHERE id = $1 AND section_id = $2`,
+        [packageId, sectionId]
+      );
+
+      console.log(`Package ${packageId} deleted from section ${sectionId}`);
+    } catch (error) {
+      console.error("Error deleting package:", error);
+      throw new Error("Failed to delete package");
     }
   }
 

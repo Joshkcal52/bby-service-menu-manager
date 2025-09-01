@@ -124,10 +124,11 @@ export async function updateSectionOrder(
 
 // Update service order within a section
 export async function updateServiceOrder(
+  userId: string,
   sectionId: string,
   services: Array<{ id: string; order: number }>
 ) {
-  return apiCall(`/sections/${sectionId}/services/order`, {
+  return apiCall(`/menu/${userId}/sections/${sectionId}/services/order`, {
     method: "PUT",
     body: JSON.stringify({ services }),
   });
@@ -135,10 +136,11 @@ export async function updateServiceOrder(
 
 // Update package order within a section
 export async function updatePackageOrder(
+  userId: string,
   sectionId: string,
   packages: Array<{ id: string; order: number }>
 ) {
-  return apiCall(`/sections/${sectionId}/packages/order`, {
+  return apiCall(`/menu/${userId}/sections/${sectionId}/packages/order`, {
     method: "PUT",
     body: JSON.stringify({ packages }),
   });
@@ -149,6 +151,70 @@ export async function createOrGetUser(email: string, businessName: string) {
   return apiCall("/users", {
     method: "POST",
     body: JSON.stringify({ email, businessName }),
+  });
+}
+
+// Create a new section
+export async function createSection(
+  userId: string,
+  sectionData: {
+    name: string;
+    description?: string;
+    order: number;
+  }
+) {
+  return apiCall(`/menu/${userId}/sections`, {
+    method: "POST",
+    body: JSON.stringify(sectionData),
+  });
+}
+
+export async function createService(
+  userId: string,
+  sectionId: string,
+  serviceData: {
+    name: string;
+    description?: string;
+    duration: number;
+    price: number;
+    order: number;
+  }
+) {
+  return apiCall(`/menu/${userId}/sections/${sectionId}/services`, {
+    method: "POST",
+    body: JSON.stringify(serviceData),
+  });
+}
+
+export async function deleteService(
+  userId: string,
+  sectionId: string,
+  serviceId: string
+) {
+  return apiCall(
+    `/menu/${userId}/sections/${sectionId}/services/${serviceId}`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+export async function deletePackage(
+  userId: string,
+  sectionId: string,
+  packageId: string
+) {
+  return apiCall(
+    `/menu/${userId}/sections/${sectionId}/packages/${packageId}`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+export async function deleteSection(userId: string, sectionId: string) {
+  return apiCall(`/menu/${userId}/sections/${sectionId}`, {
+    method: "DELETE",
   });
 }
 
